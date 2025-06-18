@@ -40,8 +40,30 @@ int main(int argc, char*argv[])
 	printf("\n scaled image width height and width [%d][%d]", scaled_height, scaled_width);
 
 	//Allocate CUDA Array
- 	returnValue = cudaMallocArray( &cu_array, &channelDesc, width, height);
-	returnValue = (cudaError_t)(returnValue | cudaMemcpy( cu_array, data, height * width * sizeof(unsigned char), cudaMemcpyHostToDevice));
+ 	//returnValue = cudaMallocArray( &cu_array, &channelDesc, width, height);
+	//returnValue = (cudaError_t)(returnValue | cudaMemcpy( cu_array, data, height * width * sizeof(unsigned char), cudaMemcpyHostToDevice));
+
+	cudaError_t err = cudaMallocArray(&cu_array, &channelDesc, width, height);
+	if (err != cudaSuccess) {
+    		fprintf(stderr, "cudaMallocArray failed: %s\n", cudaGetErrorString(err));
+    		return -1;
+	}
+
+	// Copy host data into cudaArray
+	err = cudaMemcpyToArray(
+    		cu_array,                  // destination array
+    		0,                         // dstOffsetX
+   		0,                         // dstOffsetY
+    		data,                      // source host pointer
+    		height * width * sizeof(unsigned char),
+    		cudaMemcpyHostToDevice
+	);
+	if (err != cudaSuccess) {
+    		fprintf(stderr, "cudaMemcpyToArray failed: %s\n", cudaGetErrorString(err));
+    		cudaFreeArray(cu_array);
+    		return -1;
+	}
+
 
 	if(returnValue != cudaSuccess)
 		printf("\n Got error while running CUDA API Array Copy");
